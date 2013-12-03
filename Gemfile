@@ -1,13 +1,24 @@
 source "https://rubygems.org"
 
-gem "sinatra"
-gem "pg"
-
 gem "grape"
+gem "resque"
+gem "eventmachine"
+gem "em-websocket"
 
-gem "sequel"
+group :db do
+  gem "sequel"
+  gem "pg"
+end
 
-gem "sidekiq"
+group :web_server do
+  gem "thin"
+end
 
-gem "thin"
-gem "pry"
+group :development do
+  gem "pry"
+end
+
+group :test do
+  gem "minitest"
+  gem "rack-test"
+end

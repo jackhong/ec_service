@@ -1,3 +1,10 @@
+require 'grape'
+require 'sequel'
+
+Sequel.connect("postgres://localhost/ec_service_dev")
+Sequel::Model.plugin :json_serializer
+Sequel::Model.plugin :validation_helpers
+
 require './model/experiment'
 
 module ECService
@@ -21,9 +28,11 @@ module ECService
       desc "Start an experiment"
       params do
         requires :name, type: String, desc: "Experiment name"
+        requires :oedl, type: String, desc: "Experiment script (OEDL) body"
+        requires :props, type: String, desc: "Properties provided to run experiment"
       end
       post do
-        Experiment.create(name: params[:name])
+        Experiment.create(name: params[:name], oedl: params[:oedl], props: params[:props])
       end
 
       desc "Get the information of an experiment"
