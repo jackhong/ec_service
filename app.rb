@@ -1,5 +1,3 @@
-require 'sinatra'
-
 get '/' do
   #@info = Resque.info
   erb :index
@@ -21,4 +19,3 @@ __END__
     </form>
   </body>
 </html>
-

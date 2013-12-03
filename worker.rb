@@ -1,5 +1,3 @@
-require 'sidekiq'
-
 class EcRunner
   include Sidekiq::Worker
 
