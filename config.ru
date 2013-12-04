@@ -1,4 +1,6 @@
 require './worker'
 require './api'
 
-run ECService::API
+require 'sidekiq/web'
+
+run Rack::URLMap.new('/' => ECService::API, '/monitor' => Sidekiq::Web)

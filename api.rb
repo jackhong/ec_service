@@ -1,6 +1,5 @@
 require 'grape'
 require 'sequel'
-require 'resque'
 
 Sequel.connect("postgres://localhost/ec_service_dev")
 Sequel::Model.plugin :json_serializer
@@ -35,7 +34,7 @@ module ECService
       end
       post do
         if (exp = Experiment.create(name: params[:name], oedl: params[:oedl], props: params[:props]))
-          Resque.enqueue(Worker, exp.name, exp.props)
+          Worker.perform_async(exp.name, exp.props)
         end
       end
 
