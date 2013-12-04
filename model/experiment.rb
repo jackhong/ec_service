@@ -1,5 +1,5 @@
 class Experiment < Sequel::Model
   def validate
-    validates_unique :name
+#    validates_unique :name
   end
 end

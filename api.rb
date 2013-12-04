@@ -1,11 +1,13 @@
 require 'grape'
 require 'sequel'
+require 'resque'
 
 Sequel.connect("postgres://localhost/ec_service_dev")
 Sequel::Model.plugin :json_serializer
 Sequel::Model.plugin :validation_helpers
 
 require './model/experiment'
+require './worker'
 
 module ECService
   class API < Grape::API
@@ -32,7 +34,9 @@ module ECService
         requires :props, type: String, desc: "Properties provided to run experiment"
       end
       post do
-        Experiment.create(name: params[:name], oedl: params[:oedl], props: params[:props])
+        if (exp = Experiment.create(name: params[:name], oedl: params[:oedl], props: params[:props]))
+          Resque.enqueue(Worker, exp.name, exp.props)
+        end
       end
 
       desc "Get the information of an experiment"

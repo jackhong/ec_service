@@ -1,3 +1,4 @@
+require './worker'
 require "resque/tasks"
 require 'rake/testtask'
 
