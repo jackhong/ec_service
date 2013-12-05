@@ -3,12 +3,12 @@ require 'eventmachine'
 
 class Handler < EM::Connection
   def initialize(config)
-    EM.add_timer(20) do
-      Process.kill('KILL', get_pid)
-    end
-    @exp_id = config[:id]
-    #@channel = config[:ch]
     super
+    @exp_id = config[:id]
+    @oedl_path = config[:oedl_path]
+    if (t = config[:timeout])
+      EM.add_timer(t) { Process.kill('KILL', get_pid) }
+    end
   end
 
   def receive_data(data)
@@ -17,17 +17,20 @@ class Handler < EM::Connection
   end
 
   def unbind
-    puts "ping died with exit status: #{get_status.exitstatus}"
+    puts "EC died with exit status: #{get_status.exitstatus}"
+    File.unlink(@oedl_path)
+    EM.stop
   end
 end
 
 module ECService
   class Worker
     include Sidekiq::Worker
+    sidekiq_options queue: :ec_v6_work, retry: false, backtrace: true
 
-    def perform(name, props)
+    def perform(name, oedl_path, props)
       EM.run do
-        EM.popen("ping google.com", Handler, id: name, ch: @channel)
+        EM.popen("./ec/v6/ec.sh #{oedl_path} -e #{name}", Handler, id: name, oedl_path: oedl_path)
       end
     end
   end

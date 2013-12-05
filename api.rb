@@ -1,7 +1,8 @@
 require 'grape'
 require 'sequel'
+require 'base64'
 
-Sequel.connect("postgres://localhost/ec_service_dev")
+Sequel.connect("postgres://localhost/ec_service_development")
 Sequel::Model.plugin :json_serializer
 Sequel::Model.plugin :validation_helpers
 
@@ -30,12 +31,14 @@ module ECService
       params do
         requires :name, type: String, desc: "Experiment name"
         requires :oedl, type: String, desc: "Experiment script (OEDL) body"
-        requires :props, type: String, desc: "Properties provided to run experiment"
+        optional :props, type: String, desc: "Properties provided to run experiment"
       end
       post do
         if (exp = Experiment.create(name: params[:name], oedl: params[:oedl], props: params[:props]))
-          Worker.perform_async(exp.name, exp.props)
+          oedl_f = File.write("/tmp/#{exp.name}", Base64.decode64(exp.oedl))
+          Worker.perform_async(exp.name, "/tmp/#{exp.name}", exp.props)
         end
+        exp
       end
 
       desc "Get the information of an experiment"
