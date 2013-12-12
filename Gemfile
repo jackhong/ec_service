@@ -2,6 +2,7 @@ source "https://rubygems.org"
 
 gem "grape"
 gem "sidekiq"
+gem "sinatra"
 gem "eventmachine"
 gem "em-websocket"
 
