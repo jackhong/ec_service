@@ -1,16 +1,20 @@
-require 'grape'
-require 'sequel'
-require 'base64'
-
-Sequel.connect("postgres://localhost/ec_service_development")
-Sequel::Model.plugin :json_serializer
-Sequel::Model.plugin :validation_helpers
-
-require './model/experiment'
+#require './model/experiment'
 require './worker'
 
 module ECService
+  NAMESPACE = 'ec_service'
+  @@redis = Redis.new(host: 'localhost')
+
+  def self.redis
+    @@redis
+  end
+
+  def self.build_key(key)
+    "#{NAMESPACE}:#{key.to_s}"
+  end
+
   class API < Grape::API
+
     version 'v1', using: :header, vendor: 'omf'
     format :json
 
@@ -24,21 +28,32 @@ module ECService
     resource :experiments do
       desc "Return all experiments"
       get do
-        Experiment.all
+        ECService.redis.smembers ECService.build_key(:experiments)
       end
 
       desc "Start an experiment"
       params do
         requires :name, type: String, desc: "Experiment name"
         requires :oedl, type: String, desc: "Experiment script (OEDL) body"
-        optional :props, type: String, desc: "Properties provided to run experiment"
+        optional :props, type: Hash, desc: "Properties provided to run experiment"
       end
       post do
-        if (exp = Experiment.create(name: params[:name], oedl: params[:oedl], props: params[:props]))
-          oedl_f = File.write("/tmp/#{exp.name}", Base64.decode64(exp.oedl))
-          Worker.perform_async(exp.name, "/tmp/#{exp.name}", exp.props)
+        exp_name = params[:name]
+        exp_props = params[:props] || []
+
+        ECService.redis.sadd ECService.build_key(:experiments), exp_name
+
+        ECService.redis.set ECService.build_key(":oedl:#{exp_name}"), params[:oedl]
+        ECService.redis.set ECService.build_key(":status:#{exp_name}"), :queued
+
+        exp_props.each do |k, v|
+          ECService.redis.hset ECService.build_key(":props:#{exp_name}"), k, v
         end
-        exp
+
+        oedl_f = File.write("/tmp/#{exp_name}", Base64.decode64(params[:oedl]))
+        Worker.perform_async(exp_name, "/tmp/#{exp_name}", exp_props)
+
+        { name: exp_name }
       end
 
       desc "Get the information of an experiment"
@@ -47,7 +62,13 @@ module ECService
       end
       route_param :name do
         get do
-          Experiment.where(name: params[:name])
+          raise 'Experiment not found' unless  ECService.redis.sismember(ECService.build_key(:experiments), params[:name])
+          exp_name = params[:name]
+          {
+            name: exp_name,
+            status: ECService.redis.get(ECService.build_key(":status:#{exp_name}")),
+            logs: ECService.redis.lrange(ECService.build_key(":logs:#{exp_name}"), 0, -1)
+          }
         end
       end
 

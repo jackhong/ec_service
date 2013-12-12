@@ -1,13 +1,16 @@
 require 'spec_helper'
 require './api'
 
-require 'securerandom'
-
 describe ECService::API do
   include Rack::Test::Methods
 
   def app
     ECService::API
+  end
+
+  before do
+    new_exp = { name: "bob", props: { node1: 'n1' }, oedl: "ZGVmUHJvcGVydHkoJ25vZGUxJykK\n" }
+    post '/experiments', new_exp.to_json, "CONTENT_TYPE" => "application/json"
   end
 
   describe "when GET /experiments" do
@@ -20,13 +23,11 @@ describe ECService::API do
 
   describe "when POST /experiments" do
     it  "must start an experiment" do
-      new_exp = { name: "bob_#{SecureRandom.uuid}", props: { node1: 'n1' }.to_json, oedl: "defProperty('node1')\n" }
+      new_exp = { name: "alice", props: { node1: 'n1' }, oedl: "ZGVmUHJvcGVydHkoJ25vZGUxJykK\n" }
       post '/experiments', new_exp.to_json, "CONTENT_TYPE" => "application/json"
       last_response.status.must_equal 201
       created_exp = JSON.parse(last_response.body)
-      created_exp['name'].must_match /bob_/
-      JSON.parse(created_exp['props'])['node1'].must_match /n1/
-      created_exp['oedl'].must_equal "defProperty('node1')\n"
+      created_exp['name'].must_match /alice/
     end
 
     it "must return error if no data posted" do
@@ -38,7 +39,13 @@ describe ECService::API do
 
   describe "when GET /experiments/:name" do
     it "must get the information of an experiment" do
-      skip
+      get '/experiments/bob'
+      last_response.ok?.must_equal true
+      JSON.parse(last_response.body).tap do |exp|
+        exp['status'].must_equal 'queued'
+        exp['logs'].must_be_kind_of Array
+        #exp['graph_descs'].must_be_kind_of Array
+      end
     end
   end
 
