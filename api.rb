@@ -1,4 +1,5 @@
-#require './model/experiment'
+require 'grape'
+require 'base64'
 require './worker'
 
 module ECService

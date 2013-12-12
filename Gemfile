@@ -15,6 +15,7 @@ end
 
 group :development do
   gem "pry"
+  gem "grape_doc"
 end
 
 group :test do

@@ -1,5 +1,3 @@
-require 'grape'
-require 'base64'
 require 'redis'
 require 'hiredis'
 
