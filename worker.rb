@@ -18,8 +18,8 @@ class Handler < EM::Connection
   def receive_data(data)
     puts "#{@exp_id} #{data.chomp} #{get_pid}"
     EM.synchrony do
-      redis.publish(ns(:log_events:, @exp_id), data.chomp)
-      redis.set(ns(:status:, @exp_id), :started)
+      redis.publish(ns(:log_events, @exp_id), data.chomp)
+      redis.set(ns(:status, @exp_id), :started)
       redis.lpush(ns(:logs, @exp_id), data.chomp)
     end
   end
