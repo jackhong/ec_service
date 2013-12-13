@@ -1,8 +1,15 @@
-require 'redis'
-require 'hiredis'
-
-require './worker'
 require './api'
 
-require 'sidekiq/web'
-run Rack::URLMap.new('/' => ECService::API, '/monitor' => Sidekiq::Web)
+use Rack::Stream
+
+map '/' do
+  run ECService::API
+end
+
+map'/monitor' do
+  run Sidekiq::Web
+end
+
+map '/test' do
+  run Rack::File.new("./test.html")
+end

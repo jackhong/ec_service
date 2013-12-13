@@ -4,10 +4,11 @@ gem "grape"
 gem "sidekiq"
 gem "sinatra"
 gem "eventmachine"
-gem "em-websocket"
 
 gem "redis"
 gem "hiredis"
+gem "em-synchrony"
+gem "rack-stream"
 
 group :web_server do
   gem "thin"
@@ -15,7 +16,6 @@ end
 
 group :development do
   gem "pry"
-  gem "grape_doc"
 end
 
 group :test do

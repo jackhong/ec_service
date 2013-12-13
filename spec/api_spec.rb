@@ -3,12 +3,14 @@ require './api'
 
 describe ECService::API do
   include Rack::Test::Methods
+  include ECService::RedisHelper
 
   def app
     ECService::API
   end
 
   before do
+    fake_redis!
     new_exp = { name: "bob", props: { node1: 'n1' }, oedl: "ZGVmUHJvcGVydHkoJ25vZGUxJykK\n" }
     post '/experiments', new_exp.to_json, "CONTENT_TYPE" => "application/json"
   end
