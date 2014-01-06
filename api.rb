@@ -1,6 +1,5 @@
 require 'grape'
 require 'base64'
-#require 'rack/fiber_pool'
 require 'rack/stream'
 require 'sidekiq/web'
 
@@ -61,7 +60,7 @@ module ECService
       end
       route_param :name do
         get do
-          raise 'Experiment not found' unless  redis.sismember(ns(:experiments), params[:name])
+          raise 'Experiment not found' unless redis.sismember(ns(:experiments), params[:name])
           exp_name = params[:name]
           {
             name: exp_name,
@@ -81,12 +80,13 @@ module ECService
       route_param :name do
         get :log_events do
           after_open do
-            redis.psubscribe(ns(:log_events, :bob)) do |on|
+            redis_pubsub.subscribe(ns(:log_events, :bob)) do |on|
               on.message do |channel, msg|
                 chunk msg
               end
             end
           end
+          "Stream ready"
         end
       end
 
