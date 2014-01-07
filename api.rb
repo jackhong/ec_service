@@ -79,14 +79,16 @@ module ECService
       end
       route_param :name do
         get :log_events do
+          exp_name = params[:name]
+
           after_open do
-            redis_pubsub.subscribe(ns(:log_events, :bob)) do |on|
+            redis_pubsub.subscribe(ns(:log_events, exp_name)) do |on|
               on.message do |channel, msg|
                 chunk msg
               end
             end
           end
-          "Stream ready"
+          redis.lrange(ns(:logs, exp_name), 0, -1)
         end
       end
 
